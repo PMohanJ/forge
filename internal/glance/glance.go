@@ -3,6 +3,7 @@ package glance
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -117,7 +118,7 @@ func (p *page) updateOutdatedWidgets() {
 }
 
 func (a *application) transformUserDefinedAssetPath(path string) string {
-	if strings.HasPrefix(path, "/assets/") {
+	if strings.HasPrefix(path, "/assets/") || strings.HasPrefix(path, "/config/") {
 		return a.Config.Server.BaseURL + path
 	}
 
@@ -228,6 +229,7 @@ func (a *application) server() (func() error, func() error) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	mux.HandleFunc(fmt.Sprintf("GET /static/%s/manifest.json", staticFSHash), a.handleManifestRequest)
 	mux.Handle(
 		fmt.Sprintf("GET /static/%s/{path...}", staticFSHash),
 		http.StripPrefix("/static/"+staticFSHash, fileServerWithCache(http.FS(staticFS), 24*time.Hour)),
@@ -238,6 +240,7 @@ func (a *application) server() (func() error, func() error) {
 		absAssetsPath, _ = filepath.Abs(a.Config.Server.AssetsPath)
 		assetsFS := fileServerWithCache(http.Dir(a.Config.Server.AssetsPath), 2*time.Hour)
 		mux.Handle("/assets/{path...}", http.StripPrefix("/assets/", assetsFS))
+		mux.Handle("/config/{path...}", http.StripPrefix("/config/", assetsFS))
 	}
 
 	server := http.Server{
@@ -266,4 +269,37 @@ func (a *application) server() (func() error, func() error) {
 	}
 
 	return start, stop
+}
+
+func (a *application) handleManifestRequest(w http.ResponseWriter, r *http.Request) {
+	manifest := map[string]interface{}{
+		"name": func() string {
+			if a.Config.Branding.PwaText != "" {
+				return a.Config.Branding.PwaText
+			}
+			return "Glance"
+		}(),
+		"short_name":       a.Config.Branding.PwaText,
+		"display":          "standalone",
+		"background_color": "#151519",
+		"scope":            "/",
+		"start_url":        "/",
+		"icons": []map[string]string{
+			{
+				"src": func() string {
+					if a.Config.Branding.FaviconURL != "" {
+						return a.transformUserDefinedAssetPath(a.Config.Branding.FaviconURL)
+					}
+					return a.AssetPath("app-icon.png")
+				}(),
+				"type":    "image/png",
+				"sizes":   "512x512",
+				"purpose": "any maskable",
+			},
+		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	json.NewEncoder(w).Encode(manifest)
 }
