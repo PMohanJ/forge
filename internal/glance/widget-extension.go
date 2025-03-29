@@ -19,12 +19,13 @@ const extensionWidgetDefaultTitle = "Extension"
 
 type extensionWidget struct {
 	widgetBase          `yaml:",inline"`
-	URL                 string            `yaml:"url"`
-	FallbackContentType string            `yaml:"fallback-content-type"`
-	Parameters          map[string]string `yaml:"parameters"`
-	AllowHtml           bool              `yaml:"allow-potentially-dangerous-html"`
-	Extension           extension         `yaml:"-"`
-	cachedHTML          template.HTML     `yaml:"-"`
+	URL                 string               `yaml:"url"`
+	FallbackContentType string               `yaml:"fallback-content-type"`
+	Parameters          queryParametersField `yaml:"parameters"`
+	Headers             map[string]string    `yaml:"headers"`
+	AllowHtml           bool                 `yaml:"allow-potentially-dangerous-html"`
+	Extension           extension            `yaml:"-"`
+	cachedHTML          template.HTML        `yaml:"-"`
 }
 
 func (widget *extensionWidget) initialize() error {
@@ -46,6 +47,7 @@ func (widget *extensionWidget) update(ctx context.Context) {
 		URL:                 widget.URL,
 		FallbackContentType: widget.FallbackContentType,
 		Parameters:          widget.Parameters,
+		Headers:             widget.Headers,
 		AllowHtml:           widget.AllowHtml,
 	})
 
@@ -82,10 +84,11 @@ const (
 )
 
 type extensionRequestOptions struct {
-	URL                 string            `yaml:"url"`
-	FallbackContentType string            `yaml:"fallback-content-type"`
-	Parameters          map[string]string `yaml:"parameters"`
-	AllowHtml           bool              `yaml:"allow-potentially-dangerous-html"`
+	URL                 string               `yaml:"url"`
+	FallbackContentType string               `yaml:"fallback-content-type"`
+	Parameters          queryParametersField `yaml:"parameters"`
+	Headers             map[string]string    `yaml:"headers"`
+	AllowHtml           bool                 `yaml:"allow-potentially-dangerous-html"`
 }
 
 type extension struct {
@@ -109,14 +112,13 @@ func convertExtensionContent(options extensionRequestOptions, content []byte, co
 
 func fetchExtension(options extensionRequestOptions) (extension, error) {
 	request, _ := http.NewRequest("GET", options.URL, nil)
-
-	query := url.Values{}
-
-	for key, value := range options.Parameters {
-		query.Set(key, value)
+	if len(options.Parameters) > 0 {
+		request.URL.RawQuery = options.Parameters.toQueryString()
 	}
 
-	request.URL.RawQuery = query.Encode()
+	for key, value := range options.Headers {
+		request.Header.Add(key, value)
+	}
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
