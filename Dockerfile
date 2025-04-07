@@ -6,6 +6,9 @@ RUN CGO_ENABLED=0 go build .
 
 FROM alpine:3.21
 
+# Install curl and jq for GitHub Gist API support
+RUN apk add --no-cache curl jq wget
+
 WORKDIR /app
 COPY --from=builder /app/glance .
 
