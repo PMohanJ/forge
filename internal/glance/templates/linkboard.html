@@ -1,0 +1,18 @@
+{{ template "widget-base.html" . }}
+
+{{ define "widget-content" }}
+<div class="cards-grid">
+  {{ range .Cards }}
+  <a href="{{ .URL }}" target="_blank" rel="noreferrer" class="widget-content-frame padding-widget card flex flex-column items-center" style="height: {{ $.CardHeight }}px; text-decoration: none; cursor: pointer; transition: transform 0.2s;">
+    <div class="flex items-center margin-bottom-5 justify-center">
+      <img src="{{ .LogoURL }}" alt="{{ .Title }} Logo" style="height: 40px; width: auto; max-width: 100%; object-fit: contain;">
+    </div>
+    <h3 class="size-h3 color-primary text-center">{{ .Title }}</h3>
+    <p class="margin-top-3 margin-bottom-7 color-text-paragraph text-center text-truncate-3-lines">{{ .Description }}</p>
+    <div class="margin-top-auto text-center">
+      <span class="size-h4 color-primary">{{ .ButtonText }}</span>
+    </div>
+  </a>
+  {{ end }}
+</div>
+{{ end }}
