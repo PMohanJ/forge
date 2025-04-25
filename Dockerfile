@@ -6,15 +6,18 @@ RUN CGO_ENABLED=0 go build .
 
 FROM alpine:3.21
 
-# Install curl and jq for GitHub Gist API support
 RUN apk add --no-cache curl jq wget
 
 WORKDIR /app
 COPY --from=builder /app/glance .
+COPY --from=builder /app/entrypoint.sh .
+
+RUN chmod +x /app/entrypoint.sh
 
 HEALTHCHECK --timeout=10s --start-period=60s --interval=60s \
   CMD wget --spider -q http://localhost:8080/api/healthz
 
 EXPOSE 8080/tcp
 VOLUME [ "/app/config" ]
-ENTRYPOINT ["/app/glance", "--config", "/app/config/glance.yml"]
+
+ENTRYPOINT ["/app/entrypoint.sh"]

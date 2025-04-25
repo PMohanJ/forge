@@ -9,6 +9,7 @@ var bookmarksWidgetTemplate = mustParseTemplate("bookmarks.html", "widget-base.h
 type bookmarksWidget struct {
 	widgetBase `yaml:",inline"`
 	cachedHTML template.HTML `yaml:"-"`
+	Style      string        `yaml:"style"`
 	Groups     []struct {
 		Title     string         `yaml:"title"`
 		Color     *hslColorField `yaml:"color"`
@@ -16,9 +17,10 @@ type bookmarksWidget struct {
 		HideArrow bool           `yaml:"hide-arrow"`
 		Target    string         `yaml:"target"`
 		Links     []struct {
-			Title string          `yaml:"title"`
-			URL   string          `yaml:"url"`
-			Icon  customIconField `yaml:"icon"`
+			Title       string          `yaml:"title"`
+			URL         string          `yaml:"url"`
+			Description string          `yaml:"description"`
+			Icon        customIconField `yaml:"icon"`
 			// we need a pointer to bool to know whether a value was provided,
 			// however there's no way to dereference a pointer in a template so
 			// {{ if not .SameTab }} would return true for any non-nil pointer
@@ -29,6 +31,7 @@ type bookmarksWidget struct {
 			HideArrowRaw *bool  `yaml:"hide-arrow"`
 			HideArrow    bool   `yaml:"-"`
 			Target       string `yaml:"target"`
+			ButtonText   string `yaml:"button-text"`
 		} `yaml:"links"`
 	} `yaml:"groups"`
 }
